@@ -1,0 +1,208 @@
+// --- Firebase ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+// --- Configuración Firebase ---
+const firebaseConfig = {
+  apiKey: "AIzaSyA6bQd9gGlIhDfqIzqZaFigNi2k4YuiY54",
+  authDomain: "carniceria-lucas.firebaseapp.com",
+  projectId: "carniceria-lucas",
+  storageBucket: "carniceria-lucas.appspot.com", // 🔥 corregido (.appspot.com)
+  messagingSenderId: "285806072223",
+  appId: "1:285806072223:web:7dcde9d3b7e1f2b1bf6daa",
+};
+
+// Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// --- Variables ---
+let productos = [];
+let carrito = [];
+let adminMode = false;
+
+// --- Elementos del DOM ---
+const contenedor = document.getElementById("productos");
+const listaCarrito = document.getElementById("lista-carrito");
+const totalSpan = document.getElementById("total");
+const adminPanel = document.getElementById("adminPanel");
+
+// --- Cargar productos desde Firebase ---
+async function cargarProductos() {
+  try {
+    contenedor.innerHTML = "<p>Cargando productos...</p>";
+    const snapshot = await getDocs(collection(db, "productos"));
+    productos = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderProductos();
+  } catch (error) {
+    contenedor.innerHTML = "<p>Error al cargar productos 😢</p>";
+    console.error("Error al obtener productos:", error);
+  }
+}
+
+// --- Renderizar productos ---
+function renderProductos() {
+  contenedor.innerHTML = "";
+
+  if (productos.length === 0) {
+    contenedor.innerHTML = "<p>No hay productos cargados todavía 🥩</p>";
+    return;
+  }
+
+  productos.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "producto";
+
+    if (adminMode) {
+      // --- Vista admin ---
+      card.innerHTML = `
+        <img src="${p.img}" alt="${p.nombre}" id="img-${i}" class="editable-img">
+        <input type="text" id="nombre-${i}" value="${p.nombre}">
+        <input type="number" id="precio-${i}" value="${p.precio}">
+        <input type="text" id="imgurl-${i}" value="${p.img}" placeholder="URL de imagen">
+        <div style="margin-top:5px;">
+          <button onclick="guardar(${i})">💾 Guardar</button>
+          <button onclick="borrar(${i})">🗑️ Borrar</button>
+        </div>
+      `;
+    } else {
+      // --- Vista cliente ---
+      card.innerHTML = `
+        <img src="${p.img}" alt="${p.nombre}">
+        <h3>${p.nombre}</h3>
+        <p>$${p.precio}</p>
+        <button onclick="agregar(${i})">Agregar</button>
+      `;
+    }
+
+    contenedor.appendChild(card);
+  });
+}
+
+// --- Agregar producto al carrito ---
+window.agregar = function (i) {
+  carrito.push(productos[i]);
+  renderCarrito();
+};
+
+// --- Render del carrito ---
+function renderCarrito() {
+  listaCarrito.innerHTML = "";
+  let total = 0;
+
+  carrito.forEach((p) => {
+    const li = document.createElement("li");
+    li.textContent = `${p.nombre} - $${p.precio}`;
+    listaCarrito.appendChild(li);
+    total += p.precio;
+  });
+
+  totalSpan.textContent = total;
+}
+
+// --- Enviar pedido por WhatsApp ---
+document.getElementById("enviarWsp").addEventListener("click", () => {
+  if (carrito.length === 0) return alert("Agregá algo al carrito 😅");
+
+  const texto = carrito.map((p) => `- ${p.nombre}: $${p.precio}`).join("%0A");
+  const total = totalSpan.textContent;
+  const mensaje = `Hola! Quiero hacer este pedido:%0A${texto}%0A%0ATotal: $${total}`;
+  const numero = "5493512345678"; // ⚠️ tu número sin + ni espacios
+  window.open(`https://wa.me/${numero}?text=${mensaje}`);
+});
+
+// --- Modo administrador ---
+document.getElementById("modoAdmin").addEventListener("click", () => {
+  const pass = prompt("Ingrese contraseña de admin:");
+  if (pass === "donlucas") {
+    adminMode = !adminMode;
+    adminPanel.classList.toggle("oculto");
+    renderProductos();
+  } else {
+    alert("Contraseña incorrecta");
+  }
+});
+
+// --- Agregar producto (Firebase) ---
+document.getElementById("agregar").addEventListener("click", async () => {
+  const nombre = document.getElementById("nombre").value.trim();
+  const precio = parseFloat(document.getElementById("precio").value);
+  const img = document.getElementById("imagen").value || "img/default.jpg";
+
+  if (!nombre || !precio) return alert("Falta nombre o precio");
+
+  try {
+    const docRef = await addDoc(collection(db, "productos"), {
+      nombre,
+      precio,
+      img,
+    });
+
+    productos.push({ id: docRef.id, nombre, precio, img });
+    renderProductos();
+
+    document.getElementById("nombre").value = "";
+    document.getElementById("precio").value = "";
+    document.getElementById("imagen").value = "";
+
+    alert("Producto agregado ✅");
+  } catch (error) {
+    console.error("Error al agregar producto:", error);
+  }
+});
+
+// --- Guardar cambios (Firebase) ---
+window.guardar = async function (i) {
+  const nuevoNombre = document.getElementById(`nombre-${i}`).value;
+  const nuevoPrecio = parseFloat(document.getElementById(`precio-${i}`).value);
+  const nuevaImg = document.getElementById(`imgurl-${i}`).value;
+
+  if (!nuevoNombre || !nuevoPrecio) return alert("Nombre o precio inválido");
+
+  try {
+    const productoRef = doc(db, "productos", productos[i].id);
+    await updateDoc(productoRef, {
+      nombre: nuevoNombre,
+      precio: nuevoPrecio,
+      img: nuevaImg,
+    });
+
+    productos[i] = {
+      id: productos[i].id,
+      nombre: nuevoNombre,
+      precio: nuevoPrecio,
+      img: nuevaImg,
+    };
+
+    renderProductos();
+    alert("Producto guardado ✅");
+  } catch (error) {
+    console.error("Error al guardar producto:", error);
+  }
+};
+
+// --- Borrar producto (Firebase) ---
+window.borrar = async function (i) {
+  if (!confirm("¿Seguro que querés borrar este producto?")) return;
+
+  try {
+    const productoRef = doc(db, "productos", productos[i].id);
+    await deleteDoc(productoRef);
+    productos.splice(i, 1);
+    renderProductos();
+    alert("Producto eliminado 🗑️");
+  } catch (error) {
+    console.error("Error al borrar producto:", error);
+  }
+};
+
+// --- Iniciar carga ---
+cargarProductos();

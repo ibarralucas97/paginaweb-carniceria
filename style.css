@@ -1,0 +1,198 @@
+/* Estilo general */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  background: #f8f8f8;
+  color: #333;
+}
+
+/* Encabezado */
+header {
+  background: #c62828;
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+header button {
+  background: white;
+  color: #c62828;
+  border: none;
+  padding: 8px 16px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+header button:hover {
+  background: #ffd6d6;
+}
+
+/* Layout principal */
+main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 20px;
+  gap: 30px;
+}
+
+/* Productos */
+.productos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 25px;
+  flex: 2;
+}
+
+.producto {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.producto:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+}
+
+.producto img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.producto h3 {
+  margin: 10px 0 5px;
+}
+
+.producto p {
+  margin: 0 0 10px;
+  font-size: 1.1em;
+  color: #c62828;
+  font-weight: bold;
+}
+
+.producto button {
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.producto button:hover {
+  background: #a71d1d;
+}
+
+/* Carrito */
+.carrito {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  min-width: 280px;
+  max-height: 480px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.carrito h2 {
+  margin-top: 0;
+  color: #c62828;
+}
+
+.carrito ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+
+.carrito li {
+  border-bottom: 1px solid #ddd;
+  padding: 5px 0;
+}
+
+.btn-wsp {
+  background: #25d366;
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-wsp:hover {
+  background: #1eb851;
+}
+
+/* Panel de administración */
+.admin-panel {
+  background: #fff;
+  padding: 20px;
+  margin: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.admin-panel h2 {
+  margin-top: 0;
+  color: #c62828;
+}
+
+.formulario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.formulario input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  flex: 1;
+}
+
+.formulario button {
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.formulario button:hover {
+  background: #a71d1d;
+}
+
+/* Oculto */
+.oculto {
+  display: none;
+}
+
+/* Inputs editables */
+.editable-img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
