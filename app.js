@@ -43,7 +43,7 @@ async function cargarProductos() {
     productos = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderProductos();
   } catch (error) {
-    contenedor.innerHTML = "<p>Error al cargar productos 😢</p>";
+    contenedor.innerHTML = "<p>Error al cargar productos</p>";
     console.error("Error al obtener productos:", error);
   }
 }
@@ -121,5 +121,105 @@ function renderCarrito() {
 
 // --- Enviar pedido por WhatsApp ---
 document.getElementById("enviarWsp").addEventListener("click", () => {
-  if (
+  if (carrito.length === 0) return alert("Agregá algo al carrito 😅");
 
+  const texto = carrito.map((p) => `- ${p.nombre}: $${p.precio}`).join("%0A");
+  const total = totalSpan.textContent;
+  const mensaje = `Hola! Quiero hacer este pedido:%0A${texto}%0A%0ATotal: $${total}`;
+  const numero = "5493512345678"; // ⚠️ tu número sin + ni espacios
+  window.open(`https://wa.me/${numero}?text=${mensaje}`);
+});
+
+// --- Modo administrador ---
+document.getElementById("modoAdmin").addEventListener("click", () => {
+  const pass = prompt("Ingrese contraseña de admin:");
+  if (pass === "donlucas") {
+    adminMode = !adminMode;
+    adminPanel.classList.toggle("oculto");
+    renderProductos();
+  } else {
+    alert("Contraseña incorrecta");
+  }
+});
+
+// --- Agregar producto (Firebase) ---
+document.getElementById("agregar").addEventListener("click", async () => {
+  const nombre = document.getElementById("nombre").value.trim();
+  const precio = parseFloat(document.getElementById("precio").value);
+  const descripcion = document.getElementById("descripcion").value.trim();
+  const img = document.getElementById("imagen").value || "img/default.jpg";
+
+  if (!nombre || !precio) return alert("Falta nombre o precio");
+
+  try {
+    const docRef = await addDoc(collection(db, "productos"), {
+      nombre,
+      precio,
+      descripcion,
+      img,
+    });
+
+    productos.push({ id: docRef.id, nombre, precio, descripcion, img });
+    renderProductos();
+
+    document.getElementById("nombre").value = "";
+    document.getElementById("precio").value = "";
+    document.getElementById("descripcion").value = "";
+    document.getElementById("imagen").value = "";
+
+    alert("Producto agregado ✅");
+  } catch (error) {
+    console.error("Error al agregar producto:", error);
+  }
+});
+
+// --- Guardar cambios (Firebase) ---
+window.guardar = async function (i) {
+  const nuevoNombre = document.getElementById(`nombre-${i}`).value;
+  const nuevoPrecio = parseFloat(document.getElementById(`precio-${i}`).value);
+  const nuevaDescripcion = document.getElementById(`descripcion-${i}`).value;
+  const nuevaImg = document.getElementById(`imgurl-${i}`).value;
+
+  if (!nuevoNombre || !nuevoPrecio) return alert("Nombre o precio inválido");
+
+  try {
+    const productoRef = doc(db, "productos", productos[i].id);
+    await updateDoc(productoRef, {
+      nombre: nuevoNombre,
+      precio: nuevoPrecio,
+      descripcion: nuevaDescripcion,
+      img: nuevaImg,
+    });
+
+    productos[i] = {
+      id: productos[i].id,
+      nombre: nuevoNombre,
+      precio: nuevoPrecio,
+      descripcion: nuevaDescripcion,
+      img: nuevaImg,
+    };
+
+    renderProductos();
+    alert("Producto guardado ✅");
+  } catch (error) {
+    console.error("Error al guardar producto:", error);
+  }
+};
+
+// --- Borrar producto (Firebase) ---
+window.borrar = async function (i) {
+  if (!confirm("¿Seguro que querés borrar este producto?")) return;
+
+  try {
+    const productoRef = doc(db, "productos", productos[i].id);
+    await deleteDoc(productoRef);
+    productos.splice(i, 1);
+    renderProductos();
+    alert("Producto eliminado 🗑️");
+  } catch (error) {
+    console.error("Error al borrar producto:", error);
+  }
+};
+
+// --- Iniciar carga ---
+cargarProductos();
