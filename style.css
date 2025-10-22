@@ -196,3 +196,26 @@ main {
   margin-bottom: 8px;
 }
 
+/* Agrego lo de descripcion */
+
+/* Descripción */
+.descripcion {
+  font-size: 0.9em;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+/* Botón eliminar del carrito */
+.btn-eliminar {
+  background: none;
+  border: none;
+  color: red;
+  cursor: pointer;
+  font-size: 0.9em;
+  margin-left: 10px;
+}
+
+.btn-eliminar:hover {
+  transform: scale(1.2);
+}
+
