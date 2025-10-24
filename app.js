@@ -76,10 +76,11 @@ function renderProductos() {
       `;
     } else {
       // --- Vista cliente ---
+      // <p class="precio">$${p.precio}</p> (Comentado para arreglar tema punto en precio)
       card.innerHTML = `
         <img src="${p.img}" alt="${p.nombre}">
         <h3>${p.nombre}</h3>
-        <p class="precio">$${p.precio}</p>
+        <p class="precio">$${p.precio.toLocaleString('es-AR')}</p>
         <p class="descripcion">${p.descripcion || ""}</p>
         <button onclick="agregar(${i})">Agregar</button>
         <span class="cantidad-badge"></span> <!-- NUEVO: badge -->
