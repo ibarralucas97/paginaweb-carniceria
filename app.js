@@ -13,12 +13,12 @@ import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc } 
 
 // ----------- CONFIGURACIÓN FIREBASE -----------
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_SENDER_ID",
-  appId: "TU_APP_ID",
+  apiKey: "AIzaSyA6bQd9gGlIhDfqIzqZaFigNi2k4YuiY54",
+  authDomain: "carniceria-lucas.firebaseapp.com",
+  projectId: "carniceria-lucas",
+  storageBucket: "carniceria-lucas.appspot.com",
+  messagingSenderId: "285806072223",
+  appId: "1:285806072223:web:7dcde9d3b7e1f2b1bf6daa",
 };
 
 // Inicializa la app y la base de datos
