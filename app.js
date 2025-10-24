@@ -89,12 +89,56 @@ function mostrarProductos() {
 // FUNCIÓN: Cargar productos desde Firestore
 // ===================================================
 async function cargarProductos() {
-  const querySnapshot = await getDocs(collection(db, "productos"));
-  productos = [];
-  querySnapshot.forEach((docu) => {
-    productos.push({ id: docu.id, ...docu.data() });
+  try {
+    contenedor.innerHTML = "<p>Cargando productos...</p>";
+    const snapshot = await getDocs(collection(db, "productos"));
+    productos = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderProductos();
+  } catch (error) {
+    contenedor.innerHTML = "<p>Error al cargar productos 😢</p>";
+    console.error("Error al obtener productos:", error);
+  }
+}
+
+// --- Renderizar productos ---
+function renderProductos() {
+  contenedor.innerHTML = "";
+
+  if (productos.length === 0) {
+    contenedor.innerHTML = "<p>No hay productos cargados todavía 🥩</p>";
+    return;
+  }
+
+  productos.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "producto";
+
+    if (adminMode) {
+      // --- Vista admin ---
+      card.innerHTML = `
+        <img src="${p.img}" alt="${p.nombre}" id="img-${i}" class="editable-img">
+        <input type="text" id="nombre-${i}" value="${p.nombre}" placeholder="Nombre">
+        <input type="number" id="precio-${i}" value="${p.precio}" placeholder="Precio">
+        <input type="text" id="descripcion-${i}" value="${p.descripcion || ''}" placeholder="Descripción">
+        <input type="text" id="imgurl-${i}" value="${p.img}" placeholder="URL de imagen">
+        <div style="margin-top:5px;">
+          <button onclick="guardar(${i})">💾 Guardar</button>
+          <button onclick="borrar(${i})">🗑️ Borrar</button>
+        </div>
+      `;
+    } else {
+      // --- Vista cliente ---
+      card.innerHTML = `
+        <img src="${p.img}" alt="${p.nombre}">
+        <h3>${p.nombre}</h3>
+        <p class="precio">$${p.precio}</p>
+        <p class="descripcion">${p.descripcion || ""}</p>
+        <button onclick="agregar(${i})">Agregar</button>
+      `;
+    }
+
+    contenedor.appendChild(card);
   });
-  mostrarProductos();
 }
 
 // ===================================================
