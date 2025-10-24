@@ -1,63 +1,53 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Carnicería Don Lucas 🥩</title>
-
-  <!-- CSS principal -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carniceria 🌈</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Importante: el script se carga como module (usa imports de Firebase) -->
-  <script type="module" src="app.js" defer></script>
 </head>
 <body>
-  <!-- HEADER -->
-  <header class="site-header">
-    <h1>Carnicería Don Lucas 🥩</h1>
-    <button id="modoAdmin" class="btn-admin">Ingreso Admin</button>
+
+  <header>
+    <h1>Carnicería Delivery 🌈</h1>
+    <button id="modoAdmin">Ingreso Admin</button>
   </header>
 
-  <!-- MAIN: lista de productos -->
   <main>
-    <!-- contenedor de productos -->
-    <section id="productos" class="productos" aria-live="polite"></section>
+    <!-- Lista de productos -->
+    <section id="productos" class="productos"></section>
+
+    <!-- Carrito -->
+    <aside class="carrito">
+      <h2>🛒 Carrito</h2>
+      <ul id="lista-carrito"></ul>
+      <p>Total: $<span id="total">0</span></p>
+      <button id="enviarWsp" class="btn-wsp">Enviar por WhatsApp</button>
+    </aside>
   </main>
 
-  <!-- CARRITO: ubicado al final (mejor para móviles) -->
-  <aside id="carrito" class="carrito">
-    <h2>🛒 Carrito</h2>
-    <ul id="lista-carrito" class="lista-carrito" aria-live="polite"></ul>
-    <p class="total">Total: $<span id="total">0</span></p>
-    <button id="enviarWsp" class="btn-wsp">Enviar por WhatsApp</button>
-  </aside>
-
-  <!-- PANEL ADMIN (oculto por defecto) -->
-  <section id="adminPanel" class="admin-panel oculto" aria-hidden="true">
+  <!-- Panel Admin -->
+  <section id="adminPanel" class="admin-panel oculto">
     <h2>Panel de Administración</h2>
-
-    <!-- Inputs para crear producto -->
     <div class="formulario">
-      <input id="nombre" type="text" placeholder="Nombre del producto" />
-      <input id="precio" type="number" placeholder="Precio" />
-      <input id="imagen" type="text" placeholder="URL de imagen (https://...)" />
-      <input id="descripcion" type="text" placeholder="Descripción (ej: costilla, matambre...)" />
-      <div class="admin-actions">
-        <button id="agregar" class="btn-primario">Agregar producto</button>
-        <button id="salirAdmin" class="btn-secundario">Salir del modo Admin</button>
-      </div>
+      <input type="text" id="nombre" placeholder="Nombre del producto" />
+      <input type="number" id="precio" placeholder="Precio" />
+      <input type="text" id="descripcion" placeholder="Descripción" />
+      <input type="text" id="imagen" placeholder="URL de imagen" />
+      <button id="agregar">Agregar producto</button>
     </div>
-
-    <p class="nota-admin">Modo admin: editá, guardá o borrá productos desde las cards.</p>
+    <!-- NUEVO: botón para salir de admin -->
+    <button id="salirAdmin">Salir de Admin</button>
   </section>
 
-  <!-- TOAST flotante para notificaciones -->
-  <div id="toast" class="toast oculto" role="status" aria-live="assertive"></div>
+  <!-- Scripts -->
+  <script type="module" src="app.js"></script>
 
-  <!-- FOOTER -->
+  <!-- Fooster lindo para mama -->
   <footer>
-    <p>© 2025 Carnicería Don Lucas. Todos los derechos reservados.</p>
-    <p>Hecho con <span class="heart">❤</span> por <strong>Lucas Ibarra</strong></p>
-  </footer>
+  <p>© 2025 Carnicería. Todos los derechos reservados.</p>
+  <p>Hecho con <span style="color: red;">❤</span> por <strong>Lucas Ibarra</strong></p>
+</footer>
+
 </body>
 </html>

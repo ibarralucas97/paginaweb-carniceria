@@ -1,17 +1,16 @@
-// ==============================
-// app.js - JS principal de la página
-// Conexión a Firebase / Firestore
-// Lógica del carrito (agrupación, total)
-// Toasts flotantes (avisos)
-// Badge de cantidad por producto
-// Modo Admin: agregar, editar, borrar, salir
-// ==============================
+// --- Firebase ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-// ----------- IMPORTS DE FIREBASE -----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
-
-// ----------- CONFIGURACIÓN FIREBASE -----------
+// --- Configuración Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyA6bQd9gGlIhDfqIzqZaFigNi2k4YuiY54",
   authDomain: "carniceria-lucas.firebaseapp.com",
@@ -21,73 +20,22 @@ const firebaseConfig = {
   appId: "1:285806072223:web:7dcde9d3b7e1f2b1bf6daa",
 };
 
-// Inicializa la app y la base de datos
+// Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ----------- ELEMENTOS DEL DOM -----------
-const productosContainer = document.getElementById("productos");
+// --- Variables ---
+let productos = [];
+let carrito = [];
+let adminMode = false;
+
+// --- Elementos del DOM ---
+const contenedor = document.getElementById("productos");
 const listaCarrito = document.getElementById("lista-carrito");
-const totalEl = document.getElementById("total");
-const enviarWspBtn = document.getElementById("enviarWsp");
+const totalSpan = document.getElementById("total");
 const adminPanel = document.getElementById("adminPanel");
-const modoAdminBtn = document.getElementById("modoAdmin");
 
-const inputNombre = document.getElementById("nombre");
-const inputPrecio = document.getElementById("precio");
-const inputImagen = document.getElementById("imagen");
-const inputDesc = document.getElementById("descripcion"); // si agregás el campo descripción
-const agregarBtn = document.getElementById("agregar");
-
-// ----------- VARIABLES PRINCIPALES -----------
-let carrito = {}; // Guarda productos agrupados {id: {nombre, precio, cantidad}}
-let productos = []; // Lista general de productos del Firestore
-const telefonoWsp = "5493515720047"; // Número de destino del WhatsApp
-
-// ===================================================
-// FUNCIÓN: Mostrar aviso flotante (toast)
-// ===================================================
-function mostrarToast(mensaje) {
-  const toast = document.createElement("div");
-  toast.className = "toast";
-  toast.innerText = mensaje;
-  document.body.appendChild(toast);
-
-  // Animación de entrada y salida
-  setTimeout(() => toast.classList.add("visible"), 100);
-  setTimeout(() => {
-    toast.classList.remove("visible");
-    setTimeout(() => toast.remove(), 400);
-  }, 2000);
-}
-
-// ===================================================
-// FUNCIÓN: Renderizar lista de productos en pantalla
-// ===================================================
-function mostrarProductos() {
-  productosContainer.innerHTML = "";
-  productos.forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "producto";
-    card.innerHTML = `
-      <img src="${p.imagen}" alt="${p.nombre}">
-      <h3>${p.nombre}</h3>
-      <p>$${p.precio}</p>
-      <button class="agregar" data-id="${p.id}">Agregar</button>
-      <span class="badge oculto" id="badge-${p.id}">0</span>
-    `;
-    productosContainer.appendChild(card);
-  });
-
-  // Escuchar clicks de cada botón "Agregar"
-  document.querySelectorAll(".agregar").forEach((btn) => {
-    btn.addEventListener("click", () => agregarAlCarrito(btn.dataset.id));
-  });
-}
-
-// ===================================================
-// FUNCIÓN: Cargar productos desde Firestore
-// ===================================================
+// --- Cargar productos desde Firebase ---
 async function cargarProductos() {
   try {
     contenedor.innerHTML = "<p>Cargando productos...</p>";
@@ -134,6 +82,7 @@ function renderProductos() {
         <p class="precio">$${p.precio}</p>
         <p class="descripcion">${p.descripcion || ""}</p>
         <button onclick="agregar(${i})">Agregar</button>
+        <span class="cantidad-badge"></span> <!-- NUEVO: badge -->
       `;
     }
 
@@ -141,124 +90,164 @@ function renderProductos() {
   });
 }
 
-// ===================================================
-// FUNCIÓN: Agregar producto al carrito
-// ===================================================
-function agregarAlCarrito(id) {
-  const producto = productos.find((p) => p.id === id);
-  if (!producto) return;
+// --- Agregar producto al carrito ---
+window.agregar = function (i) {
+  carrito.push(productos[i]);
+  renderCarrito();
+  actualizarBadges();
+};
 
-  // Si ya existe, aumenta cantidad; si no, lo agrega
-  if (carrito[id]) {
-    carrito[id].cantidad++;
-  } else {
-    carrito[id] = { ...producto, cantidad: 1 };
-  }
+// --- Eliminar producto del carrito ---
+window.eliminarDelCarrito = function (index) {
+  carrito.splice(index, 1);
+  renderCarrito();
+  actualizarBadges();
+};
 
-  mostrarCarrito();
-  actualizarBadge(id);
-  mostrarToast(`${producto.nombre} agregado al carrito 🛒`);
+// --- NUEVO: función para actualizar badges ---
+function actualizarBadges() {
+  productos.forEach((p, i) => {
+    const card = contenedor.children[i];
+    if (!card) return;
+    const badge = card.querySelector(".cantidad-badge");
+    const cantidad = carrito.filter((prod) => prod.id === p.id).length;
+    badge.textContent = cantidad > 0 ? cantidad : "";
+  });
 }
 
-// ===================================================
-// FUNCIÓN: Mostrar productos agrupados en carrito
-// ===================================================
-function mostrarCarrito() {
+// --- Render del carrito agrupando productos iguales ---
+function renderCarrito() {
   listaCarrito.innerHTML = "";
   let total = 0;
 
-  Object.values(carrito).forEach((item) => {
+  const carritoAgrupado = {};
+  carrito.forEach((p) => {
+    if (carritoAgrupado[p.id]) {
+      carritoAgrupado[p.id].cantidad++;
+    } else {
+      carritoAgrupado[p.id] = { ...p, cantidad: 1 };
+    }
+  });
+
+  Object.values(carritoAgrupado).forEach((p) => {
     const li = document.createElement("li");
-    li.textContent = `${item.cantidad} - ${item.nombre} ($${item.precio * item.cantidad})`;
+    li.innerHTML = `
+      ${p.cantidad} - ${p.nombre} $${p.precio}
+      <button class="btn-eliminar" onclick="eliminarDelCarrito(${carrito.indexOf(p)})">❌</button>
+    `;
     listaCarrito.appendChild(li);
-    total += item.precio * item.cantidad;
+    total += p.precio * p.cantidad;
   });
 
-  totalEl.textContent = total;
+  totalSpan.textContent = total;
 }
 
-// ===================================================
-// FUNCIÓN: Actualizar número (badge) sobre cada producto
-// ===================================================
-function actualizarBadge(id) {
-  const badge = document.getElementById(`badge-${id}`);
-  if (!badge) return;
+// --- Enviar pedido por WhatsApp ---
+document.getElementById("enviarWsp").addEventListener("click", () => {
+  if (carrito.length === 0) return alert("Agregá algo al carrito 😅");
 
-  const cantidad = carrito[id]?.cantidad || 0;
-  badge.textContent = cantidad;
-  badge.classList.toggle("oculto", cantidad === 0);
-}
-
-// ===================================================
-// FUNCIÓN: Enviar pedido por WhatsApp
-// ===================================================
-enviarWspBtn.addEventListener("click", () => {
-  if (Object.keys(carrito).length === 0) {
-    mostrarToast("El carrito está vacío 🛒");
-    return;
-  }
-
-  let mensaje = "Hola! Quiero hacer este pedido:%0A";
-  Object.values(carrito).forEach((item) => {
-    mensaje += `• ${item.cantidad}x ${item.nombre} - $${item.precio * item.cantidad}%0A`;
-  });
-
-  mensaje += `%0ATotal: $${totalEl.textContent}`;
-  window.open(`https://wa.me/${telefonoWsp}?text=${mensaje}`, "_blank");
+  const texto = carrito.map((p) => `- ${p.nombre}: $${p.precio}`).join("%0A");
+  const total = totalSpan.textContent;
+  const mensaje = `Hola! Quiero hacer este pedido:%0A${texto}%0A%0ATotal: $${total}`;
+  const numero = "5493515720047"; // NUEVO número
+  window.open(`https://wa.me/${numero}?text=${mensaje}`);
 });
 
-// ===================================================
-// FUNCIÓN: Agregar producto nuevo (modo admin)
-// ===================================================
-agregarBtn.addEventListener("click", async () => {
-  const nombre = inputNombre.value.trim();
-  const precio = parseFloat(inputPrecio.value);
-  const imagen = inputImagen.value.trim();
-  const descripcion = inputDesc ? inputDesc.value.trim() : "";
-
-  if (!nombre || !precio || !imagen) {
-    mostrarToast("Faltan campos obligatorios ⚠️");
-    return;
-  }
-
-  await addDoc(collection(db, "productos"), {
-    nombre,
-    precio,
-    imagen,
-    descripcion,
-  });
-
-  mostrarToast("Producto agregado ✅");
-  inputNombre.value = inputPrecio.value = inputImagen.value = "";
-  if (inputDesc) inputDesc.value = "";
-
-  cargarProductos(); // refresca la lista
-});
-
-// ===================================================
-// FUNCIÓN: Modo Admin - Mostrar / Ocultar panel
-// ===================================================
-modoAdminBtn.addEventListener("click", () => {
-  adminPanel.classList.toggle("oculto");
-  if (!adminPanel.classList.contains("oculto")) {
-    mostrarToast("Modo administrador activado 🧑‍💻");
+// --- Modo administrador ---
+document.getElementById("modoAdmin").addEventListener("click", () => {
+  const pass = prompt("Ingrese contraseña de admin:");
+  if (pass === "donlucas") {
+    adminMode = !adminMode;
+    adminPanel.classList.toggle("oculto");
+    renderProductos();
+  } else {
+    alert("Contraseña incorrecta");
   }
 });
 
-// ===================================================
-// FUNCIÓN: Botón para salir del modo admin y recargar
-// ===================================================
-const salirBtn = document.createElement("button");
-salirBtn.textContent = "Salir del modo Admin";
-salirBtn.className = "btn-salir";
-salirBtn.addEventListener("click", () => {
-  adminPanel.classList.add("oculto");
-  location.reload(); // recarga la página para ver cambios
+// --- NUEVO: botón salir admin ---
+document.getElementById("salirAdmin").addEventListener("click", () => {
+  location.reload();
 });
-adminPanel.appendChild(salirBtn);
 
-// ===================================================
-// FUNCIÓN INICIAL: cargar todo al abrir la página
-// ===================================================
-window.addEventListener("DOMContentLoaded", cargarProductos);
+// --- Agregar producto (Firebase) ---
+document.getElementById("agregar").addEventListener("click", async () => {
+  const nombre = document.getElementById("nombre").value.trim();
+  const precio = parseFloat(document.getElementById("precio").value);
+  const descripcion = document.getElementById("descripcion").value.trim();
+  const img = document.getElementById("imagen").value || "img/default.jpg";
 
+  if (!nombre || !precio) return alert("Falta nombre o precio");
+
+  try {
+    const docRef = await addDoc(collection(db, "productos"), {
+      nombre,
+      precio,
+      descripcion,
+      img,
+    });
+
+    productos.push({ id: docRef.id, nombre, precio, descripcion, img });
+    renderProductos();
+
+    document.getElementById("nombre").value = "";
+    document.getElementById("precio").value = "";
+    document.getElementById("descripcion").value = "";
+    document.getElementById("imagen").value = "";
+
+    alert("Producto agregado ✅");
+  } catch (error) {
+    console.error("Error al agregar producto:", error);
+  }
+});
+
+// --- Guardar cambios (Firebase) ---
+window.guardar = async function (i) {
+  const nuevoNombre = document.getElementById(`nombre-${i}`).value;
+  const nuevoPrecio = parseFloat(document.getElementById(`precio-${i}`).value);
+  const nuevaDescripcion = document.getElementById(`descripcion-${i}`).value;
+  const nuevaImg = document.getElementById(`imgurl-${i}`).value;
+
+  if (!nuevoNombre || !nuevoPrecio) return alert("Nombre o precio inválido");
+
+  try {
+    const productoRef = doc(db, "productos", productos[i].id);
+    await updateDoc(productoRef, {
+      nombre: nuevoNombre,
+      precio: nuevoPrecio,
+      descripcion: nuevaDescripcion,
+      img: nuevaImg,
+    });
+
+    productos[i] = {
+      id: productos[i].id,
+      nombre: nuevoNombre,
+      precio: nuevoPrecio,
+      descripcion: nuevaDescripcion,
+      img: nuevaImg,
+    };
+
+    renderProductos();
+    alert("Producto guardado ✅");
+  } catch (error) {
+    console.error("Error al guardar producto:", error);
+  }
+};
+
+// --- Borrar producto (Firebase) ---
+window.borrar = async function (i) {
+  if (!confirm("¿Seguro que querés borrar este producto?")) return;
+
+  try {
+    const productoRef = doc(db, "productos", productos[i].id);
+    await deleteDoc(productoRef);
+    productos.splice(i, 1);
+    renderProductos();
+    alert("Producto eliminado 🗑️");
+  } catch (error) {
+    console.error("Error al borrar producto:", error);
+  }
+};
+
+// --- Iniciar carga ---
+cargarProductos();
