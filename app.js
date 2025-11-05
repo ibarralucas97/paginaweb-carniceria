@@ -16,7 +16,7 @@ import {
   getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 
-// --- Configuración Firebase ---
+// --- Configuración Firebase creo que no anda---
 import { firebaseConfig } from "./firebase-config.js";
 
 
