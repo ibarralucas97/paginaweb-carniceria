@@ -269,3 +269,29 @@ footer {
   max-height: 60px; /* o el alto que quieras limitar */
   overflow-y: auto; /* para scroll si es largo */
 }
+
+/* Asegurar que el body ocupe toda la altura */
+html, body {
+  height: 100%;
+}
+
+/* Hacer que el body sea un contenedor flexible vertical */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Hacer que el contenido principal ocupe todo el espacio disponible */
+main {
+  flex: 1;
+}
+
+/* Footer fijo al fondo si hay poco contenido */
+footer {
+  background: #000;
+  color: #fff;
+  text-align: center;
+  padding: 15px 0;
+  margin-top: auto; /* ✨ Esto lo empuja hacia el fondo */
+}

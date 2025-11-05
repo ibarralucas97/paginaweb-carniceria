@@ -9,13 +9,19 @@ import {
   deleteDoc,
   doc,
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 
 // --- Configuración Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyA6bQd9gGlIhDfqIzqZaFigNi2k4YuiY54",
   authDomain: "carniceria-lucas.firebaseapp.com",
   projectId: "carniceria-lucas",
-  storageBucket: "carniceria-lucas.appspot.com",
+  storageBucket: "carniceria-lucas.firebasestorage.app",
   messagingSenderId: "285806072223",
   appId: "1:285806072223:web:7dcde9d3b7e1f2b1bf6daa",
 };
@@ -23,11 +29,13 @@ const firebaseConfig = {
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // --- Variables ---
 let productos = [];
 let carrito = [];
 let adminMode = false;
+let imagenArchivo = null;
 
 // --- Elementos del DOM ---
 const contenedor = document.getElementById("productos");
@@ -68,7 +76,7 @@ function renderProductos() {
         <input type="text" id="nombre-${i}" value="${p.nombre}" placeholder="Nombre">
         <input type="number" id="precio-${i}" value="${p.precio}" placeholder="Precio">
         <input type="text" id="descripcion-${i}" value="${p.descripcion || ''}" placeholder="Descripción">
-        <input type="text" id="imgurl-${i}" value="${p.img}" placeholder="URL de imagen">
+        <input type="text" id="imgurl-${i}" value="${p.img}" placeholder="URL de imagen (opcional)">
         <div style="margin-top:5px;">
           <button onclick="guardar(${i})">💾 Guardar</button>
           <button onclick="borrar(${i})">🗑️ Borrar</button>
@@ -76,14 +84,13 @@ function renderProductos() {
       `;
     } else {
       // --- Vista cliente ---
-      // <p class="precio">$${p.precio}</p> (Comentado para arreglar tema punto en precio)
       card.innerHTML = `
         <img src="${p.img}" alt="${p.nombre}">
         <h3>${p.nombre}</h3>
         <p class="precio">$${p.precio.toLocaleString('es-AR')}</p>
         <p class="descripcion">${p.descripcion || ""}</p>
         <button onclick="agregar(${i})">Agregar</button>
-        <span class="cantidad-badge"></span> <!-- NUEVO: badge -->
+        <span class="cantidad-badge"></span>
       `;
     }
 
@@ -98,14 +105,15 @@ window.agregar = function (i) {
   actualizarBadges();
 };
 
-// --- Eliminar producto del carrito ---
-window.eliminarDelCarrito = function (index) {
-  carrito.splice(index, 1);
+// --- Eliminar producto del carrito (fixeado) ---
+window.eliminarDelCarrito = function (id) {
+  const index = carrito.findIndex((p) => p.id === id);
+  if (index !== -1) carrito.splice(index, 1);
   renderCarrito();
   actualizarBadges();
 };
 
-// --- NUEVO: función para actualizar badges ---
+// --- Actualizar badges ---
 function actualizarBadges() {
   productos.forEach((p, i) => {
     const card = contenedor.children[i];
@@ -120,85 +128,140 @@ function actualizarBadges() {
 function renderCarrito() {
   listaCarrito.innerHTML = "";
   let total = 0;
+  const agrupado = {};
 
-  const carritoAgrupado = {};
   carrito.forEach((p) => {
-    if (carritoAgrupado[p.id]) {
-      carritoAgrupado[p.id].cantidad++;
-    } else {
-      carritoAgrupado[p.id] = { ...p, cantidad: 1 };
-    }
+    if (agrupado[p.id]) agrupado[p.id].cantidad++;
+    else agrupado[p.id] = { ...p, cantidad: 1 };
   });
 
-  Object.values(carritoAgrupado).forEach((p) => {
+  Object.values(agrupado).forEach((p) => {
     const li = document.createElement("li");
     li.innerHTML = `
-      ${p.cantidad} - ${p.nombre} $${p.precio}
-      <button class="btn-eliminar" onclick="eliminarDelCarrito(${carrito.indexOf(p)})">❌</button>
+      ${p.cantidad} - ${p.nombre} $${p.precio.toLocaleString('es-AR')}
+      <button class="btn-eliminar" onclick="eliminarDelCarrito('${p.id}')">❌</button>
     `;
     listaCarrito.appendChild(li);
     total += p.precio * p.cantidad;
   });
 
-  totalSpan.textContent = total;
+  totalSpan.textContent = total.toLocaleString('es-AR');
 }
 
 // --- Enviar pedido por WhatsApp ---
 document.getElementById("enviarWsp").addEventListener("click", () => {
   if (carrito.length === 0) return alert("Agregá algo al carrito 😅");
 
-  const texto = carrito.map((p) => `- ${p.nombre}: $${p.precio}`).join("%0A");
+  const agrupado = {};
+  carrito.forEach((p) => {
+    if (agrupado[p.nombre]) agrupado[p.nombre].cantidad++;
+    else agrupado[p.nombre] = { precio: p.precio, cantidad: 1 };
+  });
+
+  const texto = Object.entries(agrupado)
+    .map(([nombre, datos]) => `- ${nombre} x${datos.cantidad}: $${datos.precio.toLocaleString('es-AR')}`)
+    .join("%0A");
+
   const total = totalSpan.textContent;
   const mensaje = `Hola! Quiero hacer este pedido:%0A${texto}%0A%0ATotal: $${total}`;
-  const numero = "5493515720047"; // NUEVO número
+  const numero = "5493515720047";
   window.open(`https://wa.me/${numero}?text=${mensaje}`);
 });
 
-// --- Modo administrador ---
-document.getElementById("modoAdmin").addEventListener("click", () => {
-  const pass = prompt("Ingrese contraseña de admin:");
-  if (pass === "donlucas") {
+// --- Modo administrador con SweetAlert2 ---
+document.getElementById("modoAdmin").addEventListener("click", async () => {
+  const { value: password } = await Swal.fire({
+    title: "🔐 Ingreso administrador",
+    input: "password",
+    inputLabel: "Contraseña",
+    inputPlaceholder: "Ingresá la contraseña",
+    inputAttributes: {
+      maxlength: "15",
+      autocapitalize: "off",
+      autocorrect: "off"
+    },
+    confirmButtonText: "Entrar",
+    showCancelButton: true,
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#c62828",
+    cancelButtonColor: "#777",
+  });
+
+  if (password === "donlucas") {
+    Swal.fire({
+      icon: "success",
+      title: "Bienvenido al panel 🧑‍💼",
+      timer: 1500,
+      showConfirmButton: false,
+    });
     adminMode = !adminMode;
     adminPanel.classList.toggle("oculto");
     renderProductos();
-  } else {
-    alert("Contraseña incorrecta");
+  } else if (password) {
+    Swal.fire({
+      icon: "error",
+      title: "Contraseña incorrecta ❌",
+      confirmButtonColor: "#c62828",
+    });
   }
 });
 
-// --- NUEVO: botón salir admin ---
+// --- Salir del modo admin ---
 document.getElementById("salirAdmin").addEventListener("click", () => {
   location.reload();
 });
 
-// --- Agregar producto (Firebase) ---
+// --- Subida de imagen local (desde PC o celular) ---
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+fileInput.accept = "image/*";
+fileInput.addEventListener("change", (e) => {
+  imagenArchivo = e.target.files[0];
+});
+document.querySelector(".formulario").appendChild(fileInput);
+
+// --- Agregar producto (Firebase + Storage) ---
 document.getElementById("agregar").addEventListener("click", async () => {
   const nombre = document.getElementById("nombre").value.trim();
   const precio = parseFloat(document.getElementById("precio").value);
   const descripcion = document.getElementById("descripcion").value.trim();
-  const img = document.getElementById("imagen").value || "img/default.jpg";
+  const urlManual = document.getElementById("imagen").value.trim();
 
   if (!nombre || !precio) return alert("Falta nombre o precio");
 
+  let imgURL = urlManual || "img/default.jpg";
+
   try {
+    // Si hay archivo, lo sube al Storage
+    if (imagenArchivo) {
+      const storageRef = ref(storage, `productos/${Date.now()}_${imagenArchivo.name}`);
+      await uploadBytes(storageRef, imagenArchivo);
+      imgURL = await getDownloadURL(storageRef);
+      imagenArchivo = null;
+    }
+
+    // Guarda producto en Firestore
     const docRef = await addDoc(collection(db, "productos"), {
       nombre,
       precio,
       descripcion,
-      img,
+      img: imgURL,
     });
 
-    productos.push({ id: docRef.id, nombre, precio, descripcion, img });
+    productos.push({ id: docRef.id, nombre, precio, descripcion, img: imgURL });
     renderProductos();
 
+    // Limpia el formulario
     document.getElementById("nombre").value = "";
     document.getElementById("precio").value = "";
     document.getElementById("descripcion").value = "";
     document.getElementById("imagen").value = "";
+    fileInput.value = "";
 
     alert("Producto agregado ✅");
   } catch (error) {
     console.error("Error al agregar producto:", error);
+    alert("Error al subir la imagen o guardar el producto 😢");
   }
 });
 
@@ -235,7 +298,7 @@ window.guardar = async function (i) {
   }
 };
 
-// --- Borrar producto (Firebase) ---
+// --- Borrar producto ---
 window.borrar = async function (i) {
   if (!confirm("¿Seguro que querés borrar este producto?")) return;
 
@@ -252,3 +315,4 @@ window.borrar = async function (i) {
 
 // --- Iniciar carga ---
 cargarProductos();
+
