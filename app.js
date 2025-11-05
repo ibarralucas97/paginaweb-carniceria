@@ -17,14 +17,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 
 // --- Configuración Firebase ---
-const firebaseConfig = {
-  apiKey: "AIzaSyA6bQd9gGlIhDfqIzqZaFigNi2k4YuiY54",
-  authDomain: "carniceria-lucas.firebaseapp.com",
-  projectId: "carniceria-lucas",
-  storageBucket: "carniceria-lucas.firebasestorage.app",
-  messagingSenderId: "285806072223",
-  appId: "1:285806072223:web:7dcde9d3b7e1f2b1bf6daa",
-};
+import { firebaseConfig } from "./firebase-config.js";
+
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);

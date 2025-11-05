@@ -1,0 +1,8 @@
+# Ignorar configuración sensible
+firebase-config.js
+
+# Archivos del sistema / IDE
+node_modules/
+.DS_Store
+.env
+
