@@ -16,7 +16,8 @@ import {
   getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 
-// --- Configuración Firebase creo que no anda---
+// --- Configuracion Firebase creo que no anda---
+import { ADMIN_TOKEN } from "./admin-token.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 
@@ -227,12 +228,14 @@ document.getElementById("agregar").addEventListener("click", async () => {
 
   try {
     // Si hay archivo, lo sube al Storage
-    if (imagenArchivo) {
-      const storageRef = ref(storage, `productos/${Date.now()}_${imagenArchivo.name}`);
-      await uploadBytes(storageRef, imagenArchivo);
-      imgURL = await getDownloadURL(storageRef);
-      imagenArchivo = null;
-    }
+if (imagenArchivo) {
+  const storageRef = ref(storage, `productos/${Date.now()}_${imagenArchivo.name}`);
+  await uploadBytes(storageRef, imagenArchivo, {
+    customMetadata: { adminToken: ADMIN_TOKEN }, // 👈 agregado acá
+  });
+  imgURL = await getDownloadURL(storageRef);
+  imagenArchivo = null;
+}
 
     // Guarda producto en Firestore
     const docRef = await addDoc(collection(db, "productos"), {
@@ -240,6 +243,7 @@ document.getElementById("agregar").addEventListener("click", async () => {
       precio,
       descripcion,
       img: imgURL,
+      adminToken: ADMIN_TOKEN, // <-- línea nueva
     });
 
     productos.push({ id: docRef.id, nombre, precio, descripcion, img: imgURL });
@@ -275,6 +279,7 @@ window.guardar = async function (i) {
       precio: nuevoPrecio,
       descripcion: nuevaDescripcion,
       img: nuevaImg,
+      adminToken: ADMIN_TOKEN, // <-- línea nueva
     });
 
     productos[i] = {
