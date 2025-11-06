@@ -1,5 +1,7 @@
 # Ignorar configuración sensible
-firebase-config.js
+# firebase-config.js
+admin.token.js
+
 
 # Archivos del sistema / IDE
 node_modules/
