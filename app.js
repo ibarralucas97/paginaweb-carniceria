@@ -1,3 +1,4 @@
+
 // --- Firebase ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import {
@@ -16,10 +17,9 @@ import {
   getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 
-// --- Configuracion Firebase creo que no anda---
+// --- Configuración Firebase ---
 import { ADMIN_TOKEN } from "./admin-token.js";
 import { firebaseConfig } from "./firebase-config.js";
-
 
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
@@ -34,8 +34,6 @@ let imagenArchivo = null;
 
 // --- Elementos del DOM ---
 const contenedor = document.getElementById("productos");
-const listaCarrito = document.getElementById("lista-carrito");
-const totalSpan = document.getElementById("total");
 const adminPanel = document.getElementById("adminPanel");
 
 // --- Cargar productos desde Firebase ---
@@ -65,7 +63,6 @@ function renderProductos() {
     card.className = "producto";
 
     if (adminMode) {
-      // --- Vista admin ---
       card.innerHTML = `
         <img src="${p.img}" alt="${p.nombre}" id="img-${i}" class="editable-img">
         <input type="text" id="nombre-${i}" value="${p.nombre}" placeholder="Nombre">
@@ -78,7 +75,6 @@ function renderProductos() {
         </div>
       `;
     } else {
-      // --- Vista cliente ---
       card.innerHTML = `
         <img src="${p.img}" alt="${p.nombre}">
         <h3>${p.nombre}</h3>
@@ -96,16 +92,17 @@ function renderProductos() {
 // --- Agregar producto al carrito ---
 window.agregar = function (i) {
   carrito.push(productos[i]);
-  renderCarrito();
   actualizarBadges();
+  actualizarBotonCarrito();
 };
 
-// --- Eliminar producto del carrito (fixeado) ---
+// --- Eliminar producto del carrito ---
 window.eliminarDelCarrito = function (id) {
   const index = carrito.findIndex((p) => p.id === id);
   if (index !== -1) carrito.splice(index, 1);
-  renderCarrito();
+  renderCarritoModal();
   actualizarBadges();
+  actualizarBotonCarrito();
 };
 
 // --- Actualizar badges ---
@@ -119,62 +116,13 @@ function actualizarBadges() {
   });
 }
 
-// --- Render del carrito agrupando productos iguales ---
-function renderCarrito() {
-  listaCarrito.innerHTML = "";
-  let total = 0;
-  const agrupado = {};
-
-  carrito.forEach((p) => {
-    if (agrupado[p.id]) agrupado[p.id].cantidad++;
-    else agrupado[p.id] = { ...p, cantidad: 1 };
-  });
-
-  Object.values(agrupado).forEach((p) => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      ${p.cantidad} - ${p.nombre} $${p.precio.toLocaleString('es-AR')}
-      <button class="btn-eliminar" onclick="eliminarDelCarrito('${p.id}')">❌</button>
-    `;
-    listaCarrito.appendChild(li);
-    total += p.precio * p.cantidad;
-  });
-
-  totalSpan.textContent = total.toLocaleString('es-AR');
-}
-
-// --- Enviar pedido por WhatsApp ---
-document.getElementById("enviarWsp").addEventListener("click", () => {
-  if (carrito.length === 0) return alert("Agregá algo al carrito 😅");
-
-  const agrupado = {};
-  carrito.forEach((p) => {
-    if (agrupado[p.nombre]) agrupado[p.nombre].cantidad++;
-    else agrupado[p.nombre] = { precio: p.precio, cantidad: 1 };
-  });
-
-  const texto = Object.entries(agrupado)
-    .map(([nombre, datos]) => `- ${nombre} x${datos.cantidad}: $${datos.precio.toLocaleString('es-AR')}`)
-    .join("%0A");
-
-  const total = totalSpan.textContent;
-  const mensaje = `Hola! Quiero hacer este pedido:%0A${texto}%0A%0ATotal: $${total}`;
-  const numero = "5493515720047";
-  window.open(`https://wa.me/${numero}?text=${mensaje}`);
-});
-
-// --- Modo administrador con SweetAlert2 ---
+// --- Modo administrador ---
 document.getElementById("modoAdmin").addEventListener("click", async () => {
   const { value: password } = await Swal.fire({
     title: "🔐 Ingreso administrador",
     input: "password",
     inputLabel: "Contraseña",
     inputPlaceholder: "Ingresá la contraseña",
-    inputAttributes: {
-      maxlength: "15",
-      autocapitalize: "off",
-      autocorrect: "off"
-    },
     confirmButtonText: "Entrar",
     showCancelButton: true,
     cancelButtonText: "Cancelar",
@@ -189,7 +137,7 @@ document.getElementById("modoAdmin").addEventListener("click", async () => {
       timer: 1500,
       showConfirmButton: false,
     });
-    adminMode = !adminMode;
+    adminMode = true;
     adminPanel.classList.toggle("oculto");
     renderProductos();
   } else if (password) {
@@ -202,20 +150,16 @@ document.getElementById("modoAdmin").addEventListener("click", async () => {
 });
 
 // --- Salir del modo admin ---
-document.getElementById("salirAdmin").addEventListener("click", () => {
-  location.reload();
-});
+document.getElementById("salirAdmin").addEventListener("click", () => location.reload());
 
-// --- Subida de imagen local (desde PC o celular) ---
+// --- Subida de imagen ---
 const fileInput = document.createElement("input");
 fileInput.type = "file";
 fileInput.accept = "image/*";
-fileInput.addEventListener("change", (e) => {
-  imagenArchivo = e.target.files[0];
-});
+fileInput.addEventListener("change", (e) => (imagenArchivo = e.target.files[0]));
 document.querySelector(".formulario").appendChild(fileInput);
 
-// --- Agregar producto (Firebase + Storage) ---
+// --- Agregar producto ---
 document.getElementById("agregar").addEventListener("click", async () => {
   const nombre = document.getElementById("nombre").value.trim();
   const precio = parseFloat(document.getElementById("precio").value);
@@ -227,29 +171,26 @@ document.getElementById("agregar").addEventListener("click", async () => {
   let imgURL = urlManual || "img/default.jpg";
 
   try {
-    // Si hay archivo, lo sube al Storage
-if (imagenArchivo) {
-  const storageRef = ref(storage, `productos/${Date.now()}_${imagenArchivo.name}`);
-  await uploadBytes(storageRef, imagenArchivo, {
-    customMetadata: { adminToken: ADMIN_TOKEN }, // 👈 agregado acá
-  });
-  imgURL = await getDownloadURL(storageRef);
-  imagenArchivo = null;
-}
+    if (imagenArchivo) {
+      const storageRef = ref(storage, `productos/${Date.now()}_${imagenArchivo.name}`);
+      await uploadBytes(storageRef, imagenArchivo, {
+        customMetadata: { adminToken: ADMIN_TOKEN },
+      });
+      imgURL = await getDownloadURL(storageRef);
+      imagenArchivo = null;
+    }
 
-    // Guarda producto en Firestore
     const docRef = await addDoc(collection(db, "productos"), {
       nombre,
       precio,
       descripcion,
       img: imgURL,
-      adminToken: ADMIN_TOKEN, // <-- línea nueva
+      adminToken: ADMIN_TOKEN,
     });
 
     productos.push({ id: docRef.id, nombre, precio, descripcion, img: imgURL });
     renderProductos();
 
-    // Limpia el formulario
     document.getElementById("nombre").value = "";
     document.getElementById("precio").value = "";
     document.getElementById("descripcion").value = "";
@@ -259,11 +200,10 @@ if (imagenArchivo) {
     alert("Producto agregado ✅");
   } catch (error) {
     console.error("Error al agregar producto:", error);
-    alert("Error al subir la imagen o guardar el producto 😢");
   }
 });
 
-// --- Guardar cambios (Firebase) ---
+// --- Guardar cambios ---
 window.guardar = async function (i) {
   const nuevoNombre = document.getElementById(`nombre-${i}`).value;
   const nuevoPrecio = parseFloat(document.getElementById(`precio-${i}`).value);
@@ -279,7 +219,7 @@ window.guardar = async function (i) {
       precio: nuevoPrecio,
       descripcion: nuevaDescripcion,
       img: nuevaImg,
-      adminToken: ADMIN_TOKEN, // <-- línea nueva
+      adminToken: ADMIN_TOKEN,
     });
 
     productos[i] = {
@@ -297,21 +237,104 @@ window.guardar = async function (i) {
   }
 };
 
-// --- Borrar producto ---
+// --- Borrar producto (con confirmación) ---
 window.borrar = async function (i) {
-  if (!confirm("¿Seguro que querés borrar este producto?")) return;
+  const confirmacion = await Swal.fire({
+    title: "¿Eliminar producto?",
+    text: "Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#c62828",
+    cancelButtonColor: "#777",
+    confirmButtonText: "Sí, borrar",
+    cancelButtonText: "Cancelar",
+  });
+
+  if (!confirmacion.isConfirmed) return;
 
   try {
     const productoRef = doc(db, "productos", productos[i].id);
     await deleteDoc(productoRef);
     productos.splice(i, 1);
     renderProductos();
-    alert("Producto eliminado 🗑️");
+    Swal.fire({
+      icon: "success",
+      title: "Producto eliminado 🗑️",
+      timer: 1500,
+      showConfirmButton: false,
+    });
   } catch (error) {
     console.error("Error al borrar producto:", error);
   }
 };
 
+// --- 🛒 Botón flotante y modal del carrito ---
+const btnCarritoFlotante = document.getElementById("btnCarritoFlotante");
+const totalFlotante = document.getElementById("totalFlotante");
+const modalCarrito = document.getElementById("modalCarrito");
+const listaCarritoModal = document.getElementById("listaCarritoModal");
+const totalModal = document.getElementById("totalModal");
+const cerrarCarrito = document.getElementById("cerrarCarrito");
+const enviarWspModal = document.getElementById("enviarWspModal");
+
+function actualizarBotonCarrito() {
+  const total = carrito.reduce((sum, p) => sum + p.precio, 0);
+  totalFlotante.textContent = `$${total.toLocaleString('es-AR')}`;
+  btnCarritoFlotante.classList.toggle("oculto", carrito.length === 0);
+}
+
+btnCarritoFlotante.addEventListener("click", () => {
+  renderCarritoModal();
+  modalCarrito.classList.remove("oculto");
+});
+
+cerrarCarrito.addEventListener("click", () => {
+  modalCarrito.classList.add("oculto");
+});
+
+function renderCarritoModal() {
+  listaCarritoModal.innerHTML = "";
+  let total = 0;
+  const agrupado = {};
+
+  carrito.forEach((p) => {
+    if (agrupado[p.id]) agrupado[p.id].cantidad++;
+    else agrupado[p.id] = { ...p, cantidad: 1 };
+  });
+
+  Object.values(agrupado).forEach((p) => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${p.cantidad} × ${p.nombre} — $${p.precio.toLocaleString('es-AR')}
+      <button class="btn-eliminar-modal" onclick="window.eliminarDelCarrito('${p.id}')">❌</button>
+    `;
+    listaCarritoModal.appendChild(li);
+    total += p.precio * p.cantidad;
+  });
+
+  totalModal.textContent = `Total: $${total.toLocaleString('es-AR')}`;
+}
+
+enviarWspModal.addEventListener("click", () => {
+  if (carrito.length === 0) return alert("Agregá algo al carrito 😅");
+
+  const agrupado = {};
+  carrito.forEach((p) => {
+    if (agrupado[p.nombre]) agrupado[p.nombre].cantidad++;
+    else agrupado[p.nombre] = { precio: p.precio, cantidad: 1 };
+  });
+
+  const texto = Object.entries(agrupado)
+    .map(([nombre, datos]) => `- ${nombre} x${datos.cantidad}: $${datos.precio.toLocaleString('es-AR')}`)
+    .join("%0A");
+
+  const total = carrito.reduce((sum, p) => sum + p.precio, 0);
+  const mensaje = `Hola! Quiero hacer este pedido:%0A${texto}%0A%0ATotal: $${total.toLocaleString('es-AR')}`;
+  const numero = "5493515720047";
+  window.open(`https://wa.me/${numero}?text=${mensaje}`);
+});
+
 // --- Iniciar carga ---
 cargarProductos();
+
 

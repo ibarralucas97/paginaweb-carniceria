@@ -1,4 +1,3 @@
-
 /* Estilo general */
 body {
   font-family: "Segoe UI", Arial, sans-serif;
@@ -84,6 +83,10 @@ main {
   font-size: 1.1em;
   color: #c62828;
   font-weight: bold;
+}
+
+.producto .descripcion {
+  color: #000 !important;
 }
 
 .producto button {
@@ -198,12 +201,10 @@ main {
   margin-bottom: 8px;
 }
 
-/* ... todo lo que ya tenías ... */
-
 /* Descripción */
 .descripcion {
   font-size: 0.9em;
-  color: #555;
+  color: #000; /* 🔥 Solo esto se cambió */
   margin-bottom: 10px;
 }
 
@@ -294,4 +295,81 @@ footer {
   text-align: center;
   padding: 15px 0;
   margin-top: auto; /* ✨ Esto lo empuja hacia el fondo */
+}
+
+.btn-carrito-flotante {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #c62828;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  transition: transform 0.2s ease;
+}
+
+.btn-carrito-flotante:hover {
+  transform: scale(1.05);
+}
+
+.oculto {
+  display: none !important;
+}
+
+.modal-carrito {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-contenido {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-contenido h2 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.acciones-carrito {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.btn-wsp {
+  background: #25D366;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-cancelar {
+  background: #777;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
 }

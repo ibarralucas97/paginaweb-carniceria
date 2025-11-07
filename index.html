@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Carniceria 🌈</title>
+  <title>Carnicería 🌈</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -16,14 +16,6 @@
   <main>
     <!-- Lista de productos -->
     <section id="productos" class="productos"></section>
-
-    <!-- Carrito -->
-    <aside class="carrito">
-      <h2>🛒 Carrito</h2>
-      <ul id="lista-carrito"></ul>
-      <p>Total: $<span id="total">0</span></p>
-      <button id="enviarWsp" class="btn-wsp">Enviar por WhatsApp</button>
-    </aside>
   </main>
 
   <!-- Panel Admin -->
@@ -36,19 +28,36 @@
       <input type="text" id="imagen" placeholder="URL de imagen" />
       <button id="agregar">Agregar producto</button>
     </div>
-    <!-- NUEVO: botón para salir de admin -->
     <button id="salirAdmin">Salir de Admin</button>
   </section>
+
+  <!-- Fooster lindo para mama -->
+  <footer>
+    <p>© 2025 Carnicería. Todos los derechos reservados.</p>
+    <p>Hecho con <span style="color: red;">❤</span> por <strong>Lucas Ibarra</strong></p>
+  </footer>
+
+  <!-- 🛒 Botón flotante del carrito -->
+  <button id="btnCarritoFlotante" class="btn-carrito-flotante oculto">
+    Ver carrito (<span id="totalFlotante">$0</span>)
+  </button>
+
+  <!-- 🛍️ Modal del carrito -->
+  <div id="modalCarrito" class="modal-carrito oculto">
+    <div class="modal-contenido">
+      <h2>Tu carrito</h2>
+      <ul id="listaCarritoModal"></ul>
+      <p id="totalModal"></p>
+      <div class="acciones-carrito">
+        <button id="enviarWspModal" class="btn-wsp">📲 Enviar pedido</button>
+        <button id="cerrarCarrito" class="btn-cancelar">❌ Seguir comprando</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script type="module" src="app.js"></script>
-
-  <!-- Fooster lindo para mama -->
-  <footer>
-  <p>© 2025 Carnicería. Todos los derechos reservados.</p>
-  <p>Hecho con <span style="color: red;">❤</span> por <strong>Lucas Ibarra</strong></p>
-</footer>
 
 </body>
 </html>
