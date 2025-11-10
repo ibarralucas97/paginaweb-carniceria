@@ -1,6 +1,6 @@
 # Ignorar configuración sensible
 firebase-config.js
-admin-token.js
+# admin-token.js
 
 # Archivos del sistema / IDE
 node_modules/
