@@ -1,5 +1,5 @@
 # Ignorar configuración sensible
-# firebase-config.js
+firebase-config.js
 admin.token.js
 
 
@@ -7,4 +7,5 @@ admin.token.js
 node_modules/
 .DS_Store
 .env
+
 
