@@ -1,10 +1,8 @@
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_APP_ID
+  apiKey: "AIzaSyDg3k7c4j7MMpyModbS63byuo9JmhuAD0c",
+  authDomain: "carniceria-lucas.firebaseapp.com",
+  projectId: "carniceria-lucas",
+  storageBucket: "carniceria-lucas.appspot.com",
+  messagingSenderId: "285806072223",
+  appId: "1:285806072223:web:7dcde9d3b7e1f2b1bf6daa"
 };
-
-
